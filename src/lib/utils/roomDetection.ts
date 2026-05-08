@@ -140,6 +140,9 @@ export function detectRooms(walls: Wall[]): Room[] {
   const rooms: Room[] = [];
   let roomCount = 0;
 
+  // A cycle cannot visit more edges than exist in the graph.
+  const maxCycleSteps = edges.length + 1;
+
   for (const e of edges) {
     const si = findOrAddVertex(e.start);
     const ei = findOrAddVertex(e.end);
@@ -154,7 +157,7 @@ export function detectRooms(walls: Wall[]): Room[] {
       let next = to;
       let valid = true;
 
-      for (let step = 0; step < 20; step++) {
+      for (let step = 0; step < maxCycleSteps; step++) {
         const dk = `${cur}-${next}`;
         if (usedDirected.has(dk)) { valid = false; break; }
         usedDirected.add(dk);
@@ -167,20 +170,21 @@ export function detectRooms(walls: Wall[]): Room[] {
 
         if (next === from && cycle.length > 3) break; // closed
 
-        // Find next: leftmost turn (smallest CCW angle from incoming direction)
+        // Pick the next edge clockwise from the back direction at `next`.
+        // This is the standard planar face-finding step and traces minimal
+        // interior faces CCW (positive signed area) in math coordinates.
         const inAngle = Math.atan2(vertices[cur].y - vertices[next].y, vertices[cur].x - vertices[next].x);
         const neighbors2 = adj.get(next);
         if (!neighbors2 || neighbors2.length === 0) { valid = false; break; }
 
-        // Find the edge with smallest positive angular difference from inAngle
-        // This gives us the "next edge clockwise" which traces minimal faces
         let bestIdx = -1;
         let bestDelta = Infinity;
         for (let i = 0; i < neighbors2.length; i++) {
           const n = neighbors2[i];
           // Skip going back along the same edge only if other options exist
           if (n.to === cur && neighbors2.length > 1) continue;
-          let delta = n.angle - inAngle;
+          // CW delta from back direction; smallest wins.
+          let delta = inAngle - n.angle;
           if (delta <= 1e-9) delta += Math.PI * 2;
           if (delta < bestDelta) {
             bestDelta = delta;
@@ -195,10 +199,15 @@ export function detectRooms(walls: Wall[]): Room[] {
 
       if (!valid || cycle[cycle.length - 1] !== from || cycle.length < 4) continue;
 
-      // Compute area using shoelace
+      // Compute signed area using shoelace.
+      // With this traversal (smallest CCW turn from the reverse-direction) in
+      // screen coordinates, interior faces have positive signed area and the
+      // outer (unbounded) face is negative — skip it so it isn't counted as a room.
       const poly = cycle.slice(0, -1).map(i => vertices[i]);
-      const area = Math.abs(shoelace(poly));
-      
+      const signedArea = shoelace(poly);
+      if (signedArea <= 0) continue;
+      const area = signedArea;
+
       // Skip very large or tiny areas
       if (area < 1000 || area > 10000000) continue;
 

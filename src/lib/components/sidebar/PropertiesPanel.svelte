@@ -70,6 +70,30 @@
   let windowDistFromA = $derived(selectedWindow && selectedWindowWall ? Math.round(calcWallLength(selectedWindowWall) * selectedWindow.position) : 0);
   let windowDistFromB = $derived(selectedWindow && selectedWindowWall ? Math.round(calcWallLength(selectedWindowWall) * (1 - selectedWindow.position)) : 0);
 
+  function onWallLength(e: Event) {
+    if (!selectedWall) return;
+    const target = e.target as HTMLInputElement;
+    const newLen = inputToCm(Number(target.value));
+    if (!isFinite(newLen) || newLen <= 0) return;
+    const currentLen = calcWallLength(selectedWall);
+    if (currentLen < 0.01) return;
+    const scale = newLen / currentLen;
+    const sx = selectedWall.start.x;
+    const sy = selectedWall.start.y;
+    const updates: Partial<Wall> = {
+      end: {
+        x: sx + (selectedWall.end.x - sx) * scale,
+        y: sy + (selectedWall.end.y - sy) * scale,
+      },
+    };
+    if (selectedWall.curvePoint) {
+      updates.curvePoint = {
+        x: sx + (selectedWall.curvePoint.x - sx) * scale,
+        y: sy + (selectedWall.curvePoint.y - sy) * scale,
+      };
+    }
+    updateWall(selectedWall.id, updates);
+  }
   function onWallThickness(e: Event) {
     if (!selectedWall) return;
     updateWall(selectedWall.id, { thickness: inputToCm(Number((e.target as HTMLInputElement).value)) });
@@ -296,7 +320,7 @@
     <div class="space-y-3">
       <label class="block">
         <span class="text-xs text-gray-500">Length ({unitLabel()})</span>
-        <input type="number" value={displayValue(wallLength)} disabled class="w-full px-2 py-1 border border-gray-200 rounded text-sm bg-gray-50" />
+        <input type="number" value={displayValue(wallLength)} onchange={onWallLength} min="1" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
       </label>
       <label class="block">
         <span class="text-xs text-gray-500">Thickness ({unitLabel()})</span>
