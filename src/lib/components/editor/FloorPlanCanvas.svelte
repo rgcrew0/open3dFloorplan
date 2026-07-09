@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { activeFloor, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, addWall, addDoor, addWindow, updateWall, moveWallEndpoint, updateDoor, updateWindow, addFurniture, moveFurniture, commitFurnitureMove, rotateFurniture, setFurnitureRotation, scaleFurniture, removeElement, placingFurnitureId, placingRotation, placingDoorType, placingWindowType, detectedRoomsStore, duplicateDoor, duplicateWindow, duplicateFurniture, duplicateWall, moveWallParallel, splitWall, snapEnabled, placingStair, addStair, moveStair, updateStair, placingColumn, placingColumnShape, addColumn, moveColumn, updateColumn, calibrationMode, calibrationPoints, updateBackgroundImage, setBackgroundImage, canvasZoom, canvasCamX, canvasCamY, panMode, showFurnitureStore, addGuide, moveGuide, removeGuide, beginUndoGroup, endUndoGroup, layerVisibility, updateRoom, addMeasurement, removeMeasurement, addAnnotation, removeAnnotation, updateAnnotation, addTextAnnotation, removeTextAnnotation, updateTextAnnotation, moveTextAnnotation, toggleFurnitureLock, createGroup, ungroupElements, findGroupForElement } from '$lib/stores/project';
-  import type { Point, Wall, Door, Window as Win, FurnitureItem, Stair, Column, GuideLine, Measurement, Annotation, TextAnnotation } from '$lib/models/types';
+  import { activeFloor, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, addWall, addDoor, addWindow, updateWall, moveWallEndpoint, updateDoor, updateWindow, addFurniture, moveFurniture, commitFurnitureMove, rotateFurniture, setFurnitureRotation, scaleFurniture, removeElement, placingFurnitureId, placingRotation, placingDoorType, placingWindowType, detectedRoomsStore, duplicateDoor, duplicateWindow, duplicateFurniture, duplicateWall, moveWallParallel, splitWall, snapEnabled, placingStair, addStair, moveStair, updateStair, placingColumn, placingColumnShape, addColumn, moveColumn, updateColumn, calibrationMode, calibrationPoints, updateBackgroundImage, setBackgroundImage, canvasZoom, canvasCamX, canvasCamY, panMode, showFurnitureStore, addGuide, moveGuide, removeGuide, beginUndoGroup, endUndoGroup, layerVisibility, updateRoom, addMeasurement, removeMeasurement, addAnnotation, removeAnnotation, updateAnnotation, addTextAnnotation, removeTextAnnotation, updateTextAnnotation, moveTextAnnotation, toggleFurnitureLock, createGroup, ungroupElements, findGroupForElement, placingEntourageId, addEntourageItem, moveEntourage, resizeEntourage, currentProject } from '$lib/stores/project';
+  import type { Point, Wall, Door, Window as Win, FurnitureItem, Stair, Column, GuideLine, Measurement, Annotation, TextAnnotation, CustomEntourageDef } from '$lib/models/types';
   import type { Floor, Room } from '$lib/models/types';
   import { detectRooms, getRoomPolygon, roomCentroid } from '$lib/utils/roomDetection';
   import { getMaterial } from '$lib/utils/materials';
@@ -14,8 +14,9 @@
   import { projectSettings, formatLength, formatArea } from '$lib/stores/settings';
   import type { ProjectSettings } from '$lib/stores/settings';
   import type { CanvasState } from '$lib/utils/canvasInteraction';
-  import { drawWall as _drawWall, drawDoorOnWall as _drawDoorOnWall, drawWindowOnWall as _drawWindowOnWall, drawDoorDistanceDimensions as _drawDoorDistanceDimensions, drawWindowDistanceDimensions as _drawWindowDistanceDimensions, drawFurnitureItem, drawStair as _drawStair, drawColumn as _drawColumn, drawGuides as _drawGuides, drawPersistedMeasurements as _drawPersistedMeasurements, drawTextAnnotations as _drawTextAnnotations, drawAnnotation as _drawAnnotation, drawAnnotations as _drawAnnotations, drawRooms as _drawRooms, drawWallJoints as _drawWallJoints, drawSnapPoints as _drawSnapPoints, drawMinimap as _drawMinimap } from '$lib/utils/canvasRenderer';
-  import { pointInPolygon, positionOnWall, findWallAt as _findWallAt, findHandleAt as _findHandleAt, findFurnitureAt as _findFurnitureAt, findColumnAt as _findColumnAt, findStairAt as _findStairAt, findDoorAt as _findDoorAt, findWindowAt as _findWindowAt, findRoomAt as _findRoomAt, hitTestMeasurement as _hitTestMeasurement, hitTestAnnotation as _hitTestAnnotation, hitTestTextAnnotation as _hitTestTextAnnotation } from '$lib/utils/hitTesting';
+  import { drawWall as _drawWall, drawDoorOnWall as _drawDoorOnWall, drawWindowOnWall as _drawWindowOnWall, drawDoorDistanceDimensions as _drawDoorDistanceDimensions, drawWindowDistanceDimensions as _drawWindowDistanceDimensions, drawFurnitureItem, drawStair as _drawStair, drawColumn as _drawColumn, drawGuides as _drawGuides, drawPersistedMeasurements as _drawPersistedMeasurements, drawTextAnnotations as _drawTextAnnotations, drawAnnotation as _drawAnnotation, drawAnnotations as _drawAnnotations, drawRooms as _drawRooms, drawWallJoints as _drawWallJoints, drawSnapPoints as _drawSnapPoints, drawMinimap as _drawMinimap, drawEntourageItems as _drawEntourageItems, drawEntourageGhost as _drawEntourageGhost, entourageAspect } from '$lib/utils/canvasRenderer';
+  import { getEntourageDef } from '$lib/utils/entourageCatalog';
+  import { pointInPolygon, positionOnWall, findWallAt as _findWallAt, findHandleAt as _findHandleAt, findFurnitureAt as _findFurnitureAt, findColumnAt as _findColumnAt, findStairAt as _findStairAt, findDoorAt as _findDoorAt, findWindowAt as _findWindowAt, findRoomAt as _findRoomAt, hitTestMeasurement as _hitTestMeasurement, hitTestAnnotation as _hitTestAnnotation, hitTestTextAnnotation as _hitTestTextAnnotation, findEntourageAt } from '$lib/utils/hitTesting';
 
   let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D;
@@ -58,6 +59,10 @@
 
   // Furniture drag state
   let draggingFurnitureId: string | null = $state(null);
+  let draggingEntourageId: string | null = $state(null);
+  let resizingEntourageId: string | null = $state(null);
+  let currentEntourageDefId: string | null = $state(null);
+  let customEntourageDefs: CustomEntourageDef[] | undefined = $state(undefined);
   let dragOffset: Point = { x: 0, y: 0 };
   let dragStartRotation: number = 0;
   let dragWasWallSnapped: boolean = false;
@@ -95,7 +100,7 @@
   let showRulers = $state(true);
 
   // Layer visibility toggles
-  let layerVis = $state({ walls: true, doors: true, windows: true, furniture: true, stairs: true, columns: true, guides: true, measurements: true, annotations: true });
+  let layerVis = $state({ walls: true, doors: true, windows: true, furniture: true, stairs: true, columns: true, guides: true, measurements: true, annotations: true, entourage: true });
   // Sync showFurnitureStore ↔ layerVisibility.furniture
   let showFurniture = $derived(layerVis.furniture);
   $effect(() => { showFurnitureStore.set(layerVis.furniture); });
@@ -1114,7 +1119,8 @@
         draggingColumnId || draggingWallEndpoint || draggingWallParallel || draggingCurveHandle ||
         draggingHandle || draggingMultiSelect || draggingRoomId || draggingRoomLabelId ||
         draggingTextAnnotationId || draggingGuideId || measuring || annotating ||
-        currentPlacingId || isPlacingStair || isPlacingColumn || marqueeStart || isPanning) {
+        currentPlacingId || isPlacingStair || isPlacingColumn || marqueeStart || isPanning ||
+        draggingEntourageId || resizingEntourageId || currentEntourageDefId) {
       canvasDirty = true;
     }
 
@@ -1183,6 +1189,11 @@
           if (showDimensions && isSelected(win.id)) drawWindowDistanceDimensions(wall, win);
         }
       }
+    }
+
+    // Entourage (2D presentation symbols) — under furniture
+    if (layerVis.entourage) {
+      _drawEntourageItems(getCS(), floor, currentSelectedId, customEntourageDefs, markDirty);
     }
 
     // Furniture
@@ -1424,6 +1435,12 @@
       const preview: Stair = { id: 'preview', position: mousePos, rotation: 0, width: 100, depth: 300, riserCount: 14, direction: 'up', stairType: 'straight' };
       drawStair(preview, false);
       ctx.restore();
+    }
+
+    // Entourage placement ghost
+    if (currentEntourageDefId) {
+      const ghostW = getEntourageDef(currentEntourageDefId)?.width ?? 100;
+      _drawEntourageGhost(getCS(), currentEntourageDefId, customEntourageDefs, mousePos, ghostW);
     }
 
     // Calibration points
@@ -1757,6 +1774,8 @@
     const unsub10 = snapEnabled.subscribe((v) => { currentSnapEnabled = v; markDirty(); });
     const unsub_snapgrid = projectSettings.subscribe((s) => { currentSnapToGrid = s.snapToGrid; currentGridSize = s.gridSize; markDirty(); });
     const unsub11 = placingStair.subscribe((v) => { isPlacingStair = v; markDirty(); });
+    const unsubEnt1 = placingEntourageId.subscribe((id) => { currentEntourageDefId = id; markDirty(); });
+    const unsubEnt2 = currentProject.subscribe((pr) => { customEntourageDefs = pr?.customEntourage; markDirty(); });
     const unsub_layers = layerVisibility.subscribe((v) => { layerVis = v; markDirty(); });
     const unsub_col = placingColumn.subscribe((v) => { isPlacingColumn = v; markDirty(); });
     const unsub_cols = placingColumnShape.subscribe((v) => { placingColShape = v; markDirty(); });
@@ -1799,7 +1818,7 @@
     }
     document.addEventListener('paste', handlePaste);
 
-    return () => { resizeObs.disconnect(); unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsub13(); unsub_multi(); unsub14(); unsub_col(); unsub_cols(); unsub_layers(); unsub_snapgrid(); document.removeEventListener('paste', handlePaste); };
+    return () => { resizeObs.disconnect(); unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsub13(); unsub_multi(); unsub14(); unsub_col(); unsub_cols(); unsub_layers(); unsub_snapgrid(); unsubEnt1(); unsubEnt2(); document.removeEventListener('paste', handlePaste); };
   });
 
   /** Compute world bounding box of all elements */
@@ -2049,6 +2068,14 @@
     }
 
     // Stair placement (before select-mode handlers to avoid interception)
+    if (currentEntourageDefId) {
+      const entW = getEntourageDef(currentEntourageDefId)?.width ?? 100;
+      const entId = addEntourageItem(currentEntourageDefId, { x: snap(wp.x), y: snap(wp.y) }, entW);
+      if (!e.shiftKey) placingEntourageId.set(null); // hold Shift to keep stamping
+      selectedElementId.set(entId);
+      return;
+    }
+
     if (isPlacingStair) {
       const pos = { x: snap(wp.x), y: snap(wp.y) };
       const id = addStair(pos);
@@ -2299,6 +2326,20 @@
         }
         return;
       }
+      // Entourage resize handle (SE corner of the selected item)
+      const selEnt = currentFloor?.entourage?.find(en => en.id === currentSelectedId);
+      if (selEnt && !selEnt.locked) {
+        const entAspect = entourageAspect(selEnt.defId, customEntourageDefs) || 1;
+        const ea = ((selEnt.rotation || 0) * Math.PI) / 180;
+        const lx = selEnt.width / 2, ly = (selEnt.width * entAspect) / 2;
+        const hx = selEnt.position.x + lx * Math.cos(ea) - ly * Math.sin(ea);
+        const hy = selEnt.position.y + lx * Math.sin(ea) + ly * Math.cos(ea);
+        if (Math.hypot(wp.x - hx, wp.y - hy) < 12 / zoom) {
+          resizingEntourageId = selEnt.id;
+          commitFurnitureMove(); // snapshot before resize for undo
+          return;
+        }
+      }
       // Check stairs
       const stair = findStairAt(wp);
       if (stair) {
@@ -2320,6 +2361,17 @@
           dragOffset = { x: wp.x - fi.position.x, y: wp.y - fi.position.y };
           dragStartRotation = fi.rotation;
           dragWasWallSnapped = false;
+        }
+        return;
+      }
+      // Check entourage (below furniture in priority)
+      const ent = findEntourageAt(wp, currentFloor?.entourage, (d) => entourageAspect(d, customEntourageDefs));
+      if (ent) {
+        selectElement(ent.id, e.shiftKey);
+        if (!e.shiftKey && !ent.locked) {
+          draggingEntourageId = ent.id;
+          commitFurnitureMove(); // snapshot before drag for undo
+          dragOffset = { x: wp.x - ent.position.x, y: wp.y - ent.position.y };
         }
         return;
       }
@@ -2645,6 +2697,21 @@
       const basePos = { x: mousePos.x - stairDragOffset.x, y: mousePos.y - stairDragOffset.y };
       moveStair(draggingStairId, { x: snap(basePos.x), y: snap(basePos.y) });
     }
+    if (draggingEntourageId) {
+      const basePos = { x: mousePos.x - dragOffset.x, y: mousePos.y - dragOffset.y };
+      moveEntourage(draggingEntourageId, { x: snap(basePos.x), y: snap(basePos.y) });
+    }
+    if (resizingEntourageId) {
+      const it = currentFloor?.entourage?.find(en => en.id === resizingEntourageId);
+      if (it) {
+        const entAspect = entourageAspect(it.defId, customEntourageDefs) || 1;
+        const ea = (-(it.rotation || 0) * Math.PI) / 180;
+        const dx = mousePos.x - it.position.x, dy = mousePos.y - it.position.y;
+        const lx = Math.abs(dx * Math.cos(ea) - dy * Math.sin(ea));
+        const ly = Math.abs(dx * Math.sin(ea) + dy * Math.cos(ea));
+        resizeEntourage(it.id, Math.max(10, Math.max(lx * 2, (ly * 2) / entAspect)));
+      }
+    }
     if (draggingFurnitureId) {
       const basePos = { x: mousePos.x - dragOffset.x, y: mousePos.y - dragOffset.y };
       const fi = currentFloor?.furniture.find(f => f.id === draggingFurnitureId);
@@ -2819,6 +2886,8 @@
     draggingWallParallel = null;
     draggingCurveHandle = null;
     draggingFurnitureId = null;
+    draggingEntourageId = null;
+    resizingEntourageId = null;
     draggingStairId = null;
     draggingColumnId = null;
     draggingDoorId = null;
@@ -2983,6 +3052,7 @@
     if (e.code === 'Escape') {
       wallStart = null; wallSequenceFirst = null; typedWallLength = '';
       placingFurnitureId.set(null);
+      placingEntourageId.set(null);
       placingRotation.set(0);
       editingTextAnnotationId = null;
       textAnnotationMode = false;
@@ -3006,6 +3076,7 @@
         for (const w of currentFloor.windows) allIds.add(w.id);
         if (currentFloor.stairs) for (const s of currentFloor.stairs) allIds.add(s.id);
         if (currentFloor.columns) for (const c of currentFloor.columns) allIds.add(c.id);
+        if (currentFloor.entourage) for (const en of currentFloor.entourage) allIds.add(en.id);
         selectedElementIds.set(allIds);
         const first = [...allIds][0] ?? null;
         selectedElementId.set(first);

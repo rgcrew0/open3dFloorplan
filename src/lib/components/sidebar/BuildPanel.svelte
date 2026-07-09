@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { selectedTool, placingFurnitureId, placingDoorType, placingWindowType, placingStair, addStair, placingColumn, placingColumnShape, activeFloor, setBackgroundImage, canvasCamX, canvasCamY } from '$lib/stores/project';
+  import { selectedTool, placingFurnitureId, placingDoorType, placingWindowType, placingStair, addStair, placingColumn, placingColumnShape, activeFloor, setBackgroundImage, canvasCamX, canvasCamY, placingEntourageId, addCustomEntourage } from '$lib/stores/project';
   import type { Tool } from '$lib/stores/project';
-  import type { Door, Window as Win } from '$lib/models/types';
+  import type { Door, Window as Win, CustomEntourageDef } from '$lib/models/types';
+  import { entourageCatalog, entourageCategories } from '$lib/utils/entourageCatalog';
   import { roomPresets, placePreset } from '$lib/utils/roomPresets';
   import { roomTemplates, placeRoomTemplate } from '$lib/utils/roomTemplates';
   import { furnitureCatalog, furnitureCategories } from '$lib/utils/furnitureCatalog';
@@ -153,6 +154,38 @@
 
   let isPlacingStair = $state(false);
   placingStair.subscribe(v => { isPlacingStair = v; });
+
+  // Entourage (2D presentation symbols)
+  let placingEntId = $state<string | null>(null);
+  placingEntourageId.subscribe(v => { placingEntId = v; });
+  let customEntDefs = $state<CustomEntourageDef[]>([]);
+  currentProject.subscribe(p => { customEntDefs = p?.customEntourage ?? []; });
+  let entourageFileInput = $state<HTMLInputElement | null>(null);
+
+  function armEntourage(id: string) {
+    placingEntourageId.set(placingEntId === id ? null : id);
+    setTool('select');
+  }
+
+  function onEntourageUpload(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { alert('Image too large (max 2 MB)'); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const aspect = img.naturalHeight / img.naturalWidth || 1;
+        const id = addCustomEntourage(file.name.replace(/\.[^.]+$/, ''), dataUrl, aspect);
+        placingEntourageId.set(id);
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  }
 
   let isPlacingColumn = $state(false);
   placingColumn.subscribe(v => { isPlacingColumn = v; });
@@ -668,6 +701,53 @@
               <span class="text-[10px] text-gray-400">{item.width}×{item.depth}cm</span>
             </button>
           {/each}
+        </div>
+
+        <!-- Entourage: 2D presentation symbols (people, cars, planting) -->
+        <div class="pt-3 mt-2 border-t border-gray-100">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">Entourage</h3>
+          {#each entourageCategories as cat}
+            {@const defs = entourageCatalog.filter(d => d.category === cat.key)}
+            <div class="mb-2">
+              <span class="text-[10px] font-medium text-gray-500">{cat.icon} {cat.label}</span>
+              <div class="grid grid-cols-3 gap-1.5 mt-1">
+                {#each defs as def}
+                  <button
+                    class="p-1.5 rounded-lg border text-center hover:border-blue-300 hover:bg-blue-50 transition-colors {placingEntId === def.id ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200' : 'border-gray-200'}"
+                    title="{def.name} ({def.width} cm) — click canvas to place, Shift-click to stamp several"
+                    onclick={() => armEntourage(def.id)}
+                  >
+                    <svg viewBox="0 0 100 {Math.round(100 * def.aspect)}" class="w-full h-8 text-gray-600" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+                      {#each def.paths as d}<path d={d} />{/each}
+                    </svg>
+                    <span class="text-[9px] text-gray-500 leading-tight block truncate">{def.name}</span>
+                  </button>
+                {/each}
+              </div>
+            </div>
+          {/each}
+          {#if customEntDefs.length}
+            <div class="mb-2">
+              <span class="text-[10px] font-medium text-gray-500">🖼️ Custom</span>
+              <div class="grid grid-cols-3 gap-1.5 mt-1">
+                {#each customEntDefs as def}
+                  <button
+                    class="p-1.5 rounded-lg border text-center hover:border-blue-300 hover:bg-blue-50 transition-colors {placingEntId === def.id ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200' : 'border-gray-200'}"
+                    title={def.name}
+                    onclick={() => armEntourage(def.id)}
+                  >
+                    <img src={def.dataUrl} alt={def.name} class="w-full h-8 object-contain" />
+                    <span class="text-[9px] text-gray-500 leading-tight block truncate">{def.name}</span>
+                  </button>
+                {/each}
+              </div>
+            </div>
+          {/if}
+          <button
+            class="w-full py-1.5 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:border-blue-300 hover:text-blue-600 transition-colors"
+            onclick={() => entourageFileInput?.click()}
+          >+ Upload PNG symbol</button>
+          <input type="file" accept="image/png,image/jpeg,image/webp" class="hidden" bind:this={entourageFileInput} onchange={onEntourageUpload} />
         </div>
       </div>
     {/if}
