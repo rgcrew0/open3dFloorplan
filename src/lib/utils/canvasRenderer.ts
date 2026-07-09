@@ -65,6 +65,35 @@ function wallThicknessScreen(w: Wall, zoom: number): number {
   return Math.max(w.thickness * zoom, 4);
 }
 
+/**
+ * Half-thickness insets at each end of a wall caused by abutting
+ * (non-collinear) neighbor walls. Used for edge-to-edge ("clear span")
+ * dimensions: centerline length minus these insets is the distance
+ * between the neighbors' inner faces.
+ */
+export function wallEdgeInsets(w: Wall, allWalls: Wall[]): { start: number; end: number } {
+  const EP = 5;
+  const wdx = w.end.x - w.start.x, wdy = w.end.y - w.start.y;
+  const wl = Math.hypot(wdx, wdy) || 1;
+  const insetAt = (pt: Point): number => {
+    let inset = 0;
+    for (const other of allWalls) {
+      if (other.id === w.id) continue;
+      const touchesStart = Math.abs(other.start.x - pt.x) < EP && Math.abs(other.start.y - pt.y) < EP;
+      const touchesEnd = Math.abs(other.end.x - pt.x) < EP && Math.abs(other.end.y - pt.y) < EP;
+      if (!touchesStart && !touchesEnd) continue;
+      // Collinear continuations don't narrow the span — only crossing walls do
+      const odx = other.end.x - other.start.x, ody = other.end.y - other.start.y;
+      const ol = Math.hypot(odx, ody) || 1;
+      const cross = Math.abs((wdx / wl) * (ody / ol) - (wdy / wl) * (odx / ol));
+      if (cross < 0.1) continue;
+      inset = Math.max(inset, other.thickness / 2);
+    }
+    return inset;
+  };
+  return { start: insetAt(w.start), end: insetAt(w.end) };
+}
+
 // ── Coordinate conversion (local helpers using CanvasState) ─────────
 
 function wts(cs: CanvasState, wx: number, wy: number): { x: number; y: number } {
@@ -119,6 +148,7 @@ export function drawWall(
   selected: boolean,
   showDimensions: boolean,
   dimSettings: ProjectSettings,
+  allWalls?: Wall[],
 ): void {
   const { ctx, zoom, width, height } = cs;
   const s = wts(cs, w.start.x, w.start.y);
@@ -261,8 +291,23 @@ export function drawWall(
   if (!showDimensions || !dimSettings.showExternalDimensions) return;
   const wlen = wallLength(w);
   if (wlen < 10) return;
-  const mx = (s.x + e.x) / 2;
-  const my = (s.y + e.y) / 2;
+
+  // Edge-to-edge (clear span) mode: shorten the measured span by the
+  // half-thickness of abutting walls at each end (issue #11).
+  let dimLen = wlen;
+  let insetS = 0, insetE = 0;
+  if (dimSettings.wallMeasureMode === 'edge' && allWalls && !w.curvePoint) {
+    const ins = wallEdgeInsets(w, allWalls);
+    insetS = ins.start;
+    insetE = ins.end;
+    dimLen = Math.max(0, wlen - insetS - insetE);
+  }
+  const ux1 = dx / len, uy1 = dy / len;
+  const sd = { x: s.x + ux1 * insetS * zoom, y: s.y + uy1 * insetS * zoom };
+  const ed = { x: e.x - ux1 * insetE * zoom, y: e.y - uy1 * insetE * zoom };
+
+  const mx = (sd.x + ed.x) / 2;
+  const my = (sd.y + ed.y) / 2;
   const offsetDist = thickness / 2 + 20;
   const nnx = (-dy / len);
   const nny = (dx / len);
@@ -280,15 +325,15 @@ export function drawWall(
     ctx.strokeStyle = dimSettings.dimensionLineColor + '80';
     ctx.lineWidth = 0.5;
     ctx.beginPath();
-    ctx.moveTo(s.x + nnx * (thickness / 2 + 2) * dimSide, s.y + nny * (thickness / 2 + 2) * dimSide);
-    ctx.lineTo(s.x + nnx * extLen * dimSide, s.y + nny * extLen * dimSide);
-    ctx.moveTo(e.x + nnx * (thickness / 2 + 2) * dimSide, e.y + nny * (thickness / 2 + 2) * dimSide);
-    ctx.lineTo(e.x + nnx * extLen * dimSide, e.y + nny * extLen * dimSide);
+    ctx.moveTo(sd.x + nnx * (thickness / 2 + 2) * dimSide, sd.y + nny * (thickness / 2 + 2) * dimSide);
+    ctx.lineTo(sd.x + nnx * extLen * dimSide, sd.y + nny * extLen * dimSide);
+    ctx.moveTo(ed.x + nnx * (thickness / 2 + 2) * dimSide, ed.y + nny * (thickness / 2 + 2) * dimSide);
+    ctx.lineTo(ed.x + nnx * extLen * dimSide, ed.y + nny * extLen * dimSide);
     ctx.stroke();
   }
 
-  const ds = { x: s.x + dOffX, y: s.y + dOffY };
-  const de = { x: e.x + dOffX, y: e.y + dOffY };
+  const ds = { x: sd.x + dOffX, y: sd.y + dOffY };
+  const de = { x: ed.x + dOffX, y: ed.y + dOffY };
   const dimMx = (ds.x + de.x) / 2;
   const dimMy = (ds.y + de.y) / 2;
 
@@ -297,7 +342,7 @@ export function drawWall(
   ctx.font = `${fontSize}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const dimLabel = formatLength(wlen, dimSettings.units);
+  const dimLabel = formatLength(dimLen, dimSettings.units);
   const textW = ctx.measureText(dimLabel).width;
 
   const ux2 = dx / len, uy2 = dy / len;
@@ -537,6 +582,55 @@ export function drawDoorOnWall(cs: CanvasState, wall: Wall, door: Door): void {
       px = ex;
       py = ey;
     }
+
+  } else if (doorType === 'opening') {
+    // Plain doorway (no door): dashed threshold lines along both wall faces
+    ctx.strokeStyle = '#999';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 4]);
+    for (const side of [-1, 1]) {
+      const ox = nx * (thickness / 2) * side;
+      const oy = ny * (thickness / 2) * side;
+      ctx.beginPath();
+      ctx.moveTo(s.x - ux * halfDoor + ox, s.y - uy * halfDoor + oy);
+      ctx.lineTo(s.x + ux * halfDoor + ox, s.y + uy * halfDoor + oy);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+  } else if (doorType === 'garage') {
+    // Overhead/sectional garage door: panel line across the opening with
+    // section ticks, plus dashed overhead-track lines into the garage.
+    ctx.strokeStyle = '#444';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(s.x - ux * halfDoor, s.y - uy * halfDoor);
+    ctx.lineTo(s.x + ux * halfDoor, s.y + uy * halfDoor);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    const segs = 4;
+    for (let i = 1; i < segs; i++) {
+      const t2 = -1 + (2 * i) / segs;
+      const tx = s.x + ux * halfDoor * t2;
+      const ty = s.y + uy * halfDoor * t2;
+      ctx.beginPath();
+      ctx.moveTo(tx + nx * 3, ty + ny * 3);
+      ctx.lineTo(tx - nx * 3, ty - ny * 3);
+      ctx.stroke();
+    }
+    const trackDir = (door.flipSide ?? false) ? -1 : 1;
+    const trackLen = halfDoor * 0.8;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = '#999';
+    for (const side of [-1, 1]) {
+      const bx = s.x + ux * halfDoor * 0.7 * side;
+      const by = s.y + uy * halfDoor * 0.7 * side;
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx + nx * trackLen * trackDir, by + ny * trackLen * trackDir);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
   }
 }
 
@@ -1280,12 +1374,15 @@ const ROOM_FILLS_DEFAULT = [
 ];
 
 export function getRoomFill(room: Room, index: number): string {
+  // Solid-color floors (floorTexture 'none') show the room color much more
+  // strongly since there is no texture painted on top.
+  const solid = room.floorTexture === 'none';
   if (room.color) {
     const hex = room.color.replace('#', '');
     const r = parseInt(hex.substring(0, 2), 16);
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, 0.12)`;
+    return `rgba(${r}, ${g}, ${b}, ${solid ? 0.45 : 0.12})`;
   }
   return ROOM_FILLS_BY_TYPE[room.name] ?? ROOM_FILLS_DEFAULT[index % ROOM_FILLS_DEFAULT.length];
 }
@@ -1299,6 +1396,9 @@ const ROOM_FLOOR_PATTERN: Record<string, FloorPatternType> = {
 
 export function drawRoomFloorPattern(cs: CanvasState, room: Room, screenPoly: { x: number; y: number }[]): void {
   const { ctx, zoom } = cs;
+  // Solid-color floor: no texture, no fallback pattern — the fill from
+  // getRoomFill is the floor.
+  if (room.floorTexture === 'none') return;
   if (room.floorTexture) {
     const texCanvas = getFloorTextureCanvas(room.floorTexture);
     if (texCanvas) {

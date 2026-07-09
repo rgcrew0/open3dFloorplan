@@ -39,6 +39,8 @@
 
   // Wall drawing state
   let wallStart: Point | null = $state(null);
+  // Digits typed while drawing a wall — Enter places the wall at exactly this length (issue #6)
+  let typedWallLength = $state('');
   let wallSequenceFirst: Point | null = $state(null);
   let mousePos: Point = $state({ x: 0, y: 0 });
 
@@ -105,7 +107,7 @@
     units: 'metric', showDimensions: true, showExternalDimensions: true,
     showInternalDimensions: false, showExtensionLines: true,
     showObjectDistance: true, dimensionLineColor: '#1e293b',
-    snapToGrid: true, gridSize: 25,
+    wallMeasureMode: 'centerline', snapToGrid: true, gridSize: 25,
   });
   projectSettings.subscribe((s) => {
     dimSettings = s;
@@ -495,7 +497,7 @@
   }
 
   function drawWall(w: Wall, selected: boolean) {
-    _drawWall(getCS(), w, selected, showDimensions, dimSettings);
+    _drawWall(getCS(), w, selected, showDimensions, dimSettings, currentFloor?.walls);
   }
 
   function drawDoorOnWall(wall: Wall, door: Door) {
@@ -565,7 +567,11 @@
     const ux = tan.x, uy = tan.y;
     const nx = -uy, ny = ux;
     const isDoor = placementPreview.type === 'door';
-    const itemWidth = isDoor ? 90 : 120;
+    const doorWidths: Record<string, number> = {
+      single: 90, double: 150, sliding: 180, french: 150,
+      pocket: 90, bifold: 180, opening: 100, garage: 240,
+    };
+    const itemWidth = isDoor ? (doorWidths[currentDoorType] ?? 90) : 120;
     const halfW = (itemWidth / 2) * zoom;
     const thickness = Math.max(wall.thickness * zoom, 4);
 
@@ -584,22 +590,33 @@
     ctx.fill();
 
     if (isDoor) {
-      const wallAngle = Math.atan2(uy, ux);
-      const r = itemWidth * zoom;
-      const hingeX = s.x - ux * halfW;
-      const hingeY = s.y - uy * halfW;
-      const startAngle = wallAngle + Math.PI;
-      const endAngle = startAngle + Math.PI / 2;
-      ctx.strokeStyle = '#3b82f6';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(hingeX, hingeY, r, Math.min(startAngle, endAngle), Math.max(startAngle, endAngle));
-      ctx.stroke();
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(hingeX, hingeY);
-      ctx.lineTo(hingeX + r * Math.cos(endAngle), hingeY + r * Math.sin(endAngle));
-      ctx.stroke();
+      // Openings and garage doors have no swing — show the gap and a panel line
+      const noSwing = currentDoorType === 'opening' || currentDoorType === 'garage';
+      if (!noSwing) {
+        const wallAngle = Math.atan2(uy, ux);
+        const r = itemWidth * zoom;
+        const hingeX = s.x - ux * halfW;
+        const hingeY = s.y - uy * halfW;
+        const startAngle = wallAngle + Math.PI;
+        const endAngle = startAngle + Math.PI / 2;
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(hingeX, hingeY, r, Math.min(startAngle, endAngle), Math.max(startAngle, endAngle));
+        ctx.stroke();
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(hingeX, hingeY);
+        ctx.lineTo(hingeX + r * Math.cos(endAngle), hingeY + r * Math.sin(endAngle));
+        ctx.stroke();
+      } else if (currentDoorType === 'garage') {
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(s.x - ux * halfW, s.y - uy * halfW);
+        ctx.lineTo(s.x + ux * halfW, s.y + uy * halfW);
+        ctx.stroke();
+      }
       ctx.lineWidth = 1.5;
       ctx.strokeStyle = '#3b82f6';
       const jamb = thickness / 2 + 2;
@@ -1455,26 +1472,7 @@
     }
     if (wallStart && currentTool === 'wall') {
       drawAngleGuides(wallStart);
-      let endPt = magneticSnap(mousePos);
-      if (shiftDown) {
-        // Force strict angle snap when Shift is held (0°, 45°, 90°, 135°, 180°)
-        const sdx = endPt.x - wallStart.x;
-        const sdy = endPt.y - wallStart.y;
-        const slen = Math.hypot(sdx, sdy);
-        if (slen > 5) {
-          const rawAngle = Math.atan2(sdy, sdx);
-          const snapAngles = [0, Math.PI / 4, Math.PI / 2, 3 * Math.PI / 4, Math.PI, -Math.PI, -3 * Math.PI / 4, -Math.PI / 2, -Math.PI / 4];
-          let bestAngle = 0;
-          let bestDiff = Infinity;
-          for (const sa of snapAngles) {
-            const diff = Math.abs(rawAngle - sa);
-            if (diff < bestDiff) { bestDiff = diff; bestAngle = sa; }
-          }
-          endPt = { x: wallStart.x + slen * Math.cos(bestAngle), y: wallStart.y + slen * Math.sin(bestAngle) };
-        }
-      } else {
-        endPt = angleSnap(wallStart, endPt);
-      }
+      const endPt = applyTypedWallLength(snapWallEndPoint(mousePos));
       const s = worldToScreen(wallStart.x, wallStart.y);
       const e = worldToScreen(endPt.x, endPt.y);
       const dx = e.x - s.x, dy = e.y - s.y;
@@ -1500,15 +1498,18 @@
       const displayAngle = ((angle % 360) + 360) % 360;
       const dimMidX = (s.x + e.x) / 2;
       const dimMidY = (s.y + e.y) / 2;
-      const dimText = formatLength(plen, dimSettings.units);
+      const typedActive = typedWallLengthCm() !== null;
+      const dimText = typedActive
+        ? `${formatLength(plen, dimSettings.units)} ⏎`
+        : formatLength(plen, dimSettings.units);
       const angleText = shiftDown ? `${Math.round(displayAngle)}° ⇧` : `${Math.round(displayAngle)}°`;
 
-      // Dimension pill (on the wall)
+      // Dimension pill (on the wall) — amber while an exact length is being typed
       ctx.font = 'bold 11px system-ui, sans-serif';
       const dimTW = ctx.measureText(dimText).width;
       const dimPW = dimTW + 12;
       const dimPH = 18;
-      ctx.fillStyle = '#1e293b';
+      ctx.fillStyle = typedActive ? '#b45309' : '#1e293b';
       ctx.beginPath();
       ctx.roundRect(dimMidX - dimPW / 2, dimMidY - dimPH / 2 - 12, dimPW, dimPH, dimPH / 2);
       ctx.fill();
@@ -2156,23 +2157,9 @@
     }
 
     if (tool === 'wall') {
-      let endPt = magneticSnap(wp);
-      if (wallStart) {
-        if (shiftDown) {
-          const sdx = endPt.x - wallStart.x;
-          const sdy = endPt.y - wallStart.y;
-          const slen = Math.hypot(sdx, sdy);
-          if (slen > 5) {
-            const rawAngle = Math.atan2(sdy, sdx);
-            const snapAngles = [0, Math.PI / 4, Math.PI / 2, 3 * Math.PI / 4, Math.PI, -Math.PI, -3 * Math.PI / 4, -Math.PI / 2, -Math.PI / 4];
-            let bestAngle = 0, bestDiff = Infinity;
-            for (const sa of snapAngles) { const diff = Math.abs(rawAngle - sa); if (diff < bestDiff) { bestDiff = diff; bestAngle = sa; } }
-            endPt = { x: wallStart.x + slen * Math.cos(bestAngle), y: wallStart.y + slen * Math.sin(bestAngle) };
-          }
-        } else {
-          endPt = angleSnap(wallStart, endPt);
-        }
-      }
+      let endPt = snapWallEndPoint(wp);
+      if (wallStart) endPt = applyTypedWallLength(endPt);
+      typedWallLength = '';
       if (!wallStart) {
         wallStart = endPt;
         wallSequenceFirst = endPt;
@@ -2886,9 +2873,78 @@
     }
   }
 
+  // ── Exact-length wall entry (issue #6) ────────────────────────────
+  /** Shared endpoint snapping for wall drawing: magnetic + Shift/angle snap. */
+  function snapWallEndPoint(raw: Point): Point {
+    let endPt = magneticSnap(raw);
+    if (!wallStart) return endPt;
+    if (shiftDown) {
+      // Force strict angle snap when Shift is held (0°, 45°, 90°, 135°, 180°)
+      const sdx = endPt.x - wallStart.x;
+      const sdy = endPt.y - wallStart.y;
+      const slen = Math.hypot(sdx, sdy);
+      if (slen > 5) {
+        const rawAngle = Math.atan2(sdy, sdx);
+        const snapAngles = [0, Math.PI / 4, Math.PI / 2, 3 * Math.PI / 4, Math.PI, -Math.PI, -3 * Math.PI / 4, -Math.PI / 2, -Math.PI / 4];
+        let bestAngle = 0, bestDiff = Infinity;
+        for (const sa of snapAngles) { const diff = Math.abs(rawAngle - sa); if (diff < bestDiff) { bestDiff = diff; bestAngle = sa; } }
+        endPt = { x: wallStart.x + slen * Math.cos(bestAngle), y: wallStart.y + slen * Math.sin(bestAngle) };
+      }
+    } else {
+      endPt = angleSnap(wallStart, endPt);
+    }
+    return endPt;
+  }
+
+  function typedWallLengthCm(): number | null {
+    const v = parseFloat(typedWallLength);
+    if (!isFinite(v) || v <= 0) return null;
+    return dimSettings.units === 'imperial' ? v * 2.54 : v;
+  }
+
+  /** Override the wall end point to the exact typed length along the current direction. */
+  function applyTypedWallLength(endPt: Point): Point {
+    const lenCm = typedWallLengthCm();
+    if (!wallStart || lenCm === null) return endPt;
+    const dx = endPt.x - wallStart.x, dy = endPt.y - wallStart.y;
+    const d = Math.hypot(dx, dy);
+    if (d < 0.001) return endPt;
+    return { x: wallStart.x + (dx / d) * lenCm, y: wallStart.y + (dy / d) * lenCm };
+  }
+
   function onKeyDown(e: KeyboardEvent) {
     shiftDown = e.shiftKey;
     if (e.code === 'Space') { spaceDown = true; e.preventDefault(); return; }
+
+    // Exact-length entry while drawing a wall (issue #6):
+    // type a number, then Enter places the wall at exactly that length.
+    const keyTargetTag = (e.target as HTMLElement)?.tagName;
+    const inFormField = keyTargetTag === 'INPUT' || keyTargetTag === 'TEXTAREA' || keyTargetTag === 'SELECT';
+    if (currentTool === 'wall' && wallStart && !editingTextAnnotationId && !inFormField && !e.metaKey && !e.ctrlKey) {
+      if (/^[0-9.]$/.test(e.key)) {
+        typedWallLength += e.key;
+        markDirty();
+        e.preventDefault();
+        return;
+      }
+      if (e.key === 'Backspace' && typedWallLength) {
+        typedWallLength = typedWallLength.slice(0, -1);
+        markDirty();
+        e.preventDefault();
+        return;
+      }
+      if (e.key === 'Enter' && typedWallLengthCm() !== null) {
+        const endPt = applyTypedWallLength(snapWallEndPoint(mousePos));
+        if (Math.hypot(endPt.x - wallStart.x, endPt.y - wallStart.y) > 1) {
+          addWall(wallStart, endPt);
+          wallStart = endPt;
+        }
+        typedWallLength = '';
+        markDirty();
+        e.preventDefault();
+        return;
+      }
+    }
 
     // Delete selected guide line
     if ((e.key === 'Delete' || e.key === 'Backspace') && selectedGuideId) {
@@ -2925,7 +2981,7 @@
 
     // Canvas-specific Escape handling (before global shortcut eats it)
     if (e.code === 'Escape') {
-      wallStart = null; wallSequenceFirst = null;
+      wallStart = null; wallSequenceFirst = null; typedWallLength = '';
       placingFurnitureId.set(null);
       placingRotation.set(0);
       editingTextAnnotationId = null;

@@ -13,7 +13,7 @@ node_modules
 Thumbs.db
 
 # Claude Code (personal)
-.claude/settings.local.json
+.claude/
 .vscode/
 
 # Env

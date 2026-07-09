@@ -186,6 +186,8 @@ export function addDoor(wallId: string, position: number, doorType: Door['type']
     french: { width: 150, height: 210 },
     pocket: { width: 90, height: 210 },
     bifold: { width: 180, height: 210 },
+    opening: { width: 100, height: 210 },
+    garage: { width: 240, height: 210 },
   };
   const { width, height } = defaults[doorType];
   mutate((f) => {

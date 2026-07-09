@@ -302,6 +302,7 @@
     'vinyl': '/textures/floor-vinyl.jpg',
   };
   const textureGroups = [
+    { label: '🎨 Plain', ids: ['none'] },
     { label: '🪵 Wood', ids: ['light-oak', 'walnut', 'bamboo', 'laminate'] },
     { label: '🔲 Tile', ids: ['ceramic-white', 'ceramic-gray', 'porcelain', 'vinyl'] },
     { label: '🪨 Stone', ids: ['marble-white', 'marble-dark', 'concrete', 'slate'] },
@@ -470,8 +471,11 @@
           <option value="french">French</option>
           <option value="pocket">Pocket</option>
           <option value="bifold">Bifold</option>
+          <option value="opening">Doorway (no door)</option>
+          <option value="garage">Garage</option>
         </select>
       </label>
+      {#if selectedDoor.type !== 'opening' && selectedDoor.type !== 'garage'}
       <label class="block">
         <span class="text-xs text-gray-500">Hinge Side</span>
         <div class="flex gap-2">
@@ -486,6 +490,7 @@
           <button onclick={() => { if (selectedDoor) updateDoor(selectedDoor.id, { flipSide: true }); }} class="flex-1 px-2 py-1.5 border rounded text-sm transition-colors {selectedDoor?.flipSide ? 'bg-blue-100 border-blue-400 text-blue-700' : 'border-gray-200 hover:bg-gray-50'}">Outward</button>
         </div>
       </label>
+      {/if}
     </div>
 
   {:else if selectedWindow}
@@ -697,7 +702,7 @@
       </div>
       <!-- Room Color -->
       <div>
-        <span class="text-xs text-gray-500 mb-1.5 block">Room Color</span>
+        <span class="text-xs text-gray-500 mb-1.5 block">Room Color{selectedRoom.floorTexture === 'none' ? ' (used as floor color)' : ''}</span>
         <div class="grid grid-cols-5 gap-1.5 mb-2">
           {#each roomColorPresets as preset}
             <button
@@ -737,7 +742,7 @@
                     >
                       <div
                         class="w-full h-12 rounded-md mb-1 overflow-hidden"
-                        style={texPath ? `background-image: url(${texPath}); background-size: cover; background-position: center;` : `background-color: ${mat.color}`}
+                        style={texPath ? `background-image: url(${texPath}); background-size: cover; background-position: center;` : `background-color: ${mat.id === 'none' ? (selectedRoom.color ?? mat.color) : mat.color}`}
                       ></div>
                       <div class="text-center leading-3 text-[10px] text-gray-600 truncate">{mat.name}</div>
                     </button>
