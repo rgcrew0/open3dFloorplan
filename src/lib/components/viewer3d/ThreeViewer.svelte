@@ -1931,6 +1931,13 @@
       case 'ArrowRight': lookRight = true; event.preventDefault(); break;
       case 'ShiftLeft':
       case 'ShiftRight': isShiftHeld = true; break;
+      // Settings adjustments (I/U = eye height, O/K = walk speed, P/L = sprint speed)
+      case 'KeyI': eyeHeight = Math.min(200, eyeHeight + 5); event.preventDefault(); break;
+      case 'KeyU': eyeHeight = Math.max(100, eyeHeight - 5); event.preventDefault(); break;
+      case 'KeyO': moveSpeed = Math.min(2000, moveSpeed + 50); event.preventDefault(); break;
+      case 'KeyK': moveSpeed = Math.max(200, moveSpeed - 50); event.preventDefault(); break;
+      case 'KeyP': sprintSpeed = Math.min(3000, sprintSpeed + 100); event.preventDefault(); break;
+      case 'KeyL': sprintSpeed = Math.max(500, sprintSpeed - 100); event.preventDefault(); break;
       case 'Escape': exitWalkthroughMode(); break;
     }
   }
@@ -2521,7 +2528,8 @@
     <!-- Help Text -->
     <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
       <div class="bg-black/70 text-white text-sm px-4 py-2 rounded-lg backdrop-blur-sm">
-        WASD to move • Arrows to look • Shift to sprint • ESC to exit
+        <div class="text-xs font-semibold">Movement: WASD • Look: Arrows • Sprint: Shift • Exit: ESC</div>
+        <div class="text-xs opacity-80 mt-1">Settings: I/U (eye) • O/K (speed) • P/L (sprint)</div>
       </div>
     </div>
   {/if}
