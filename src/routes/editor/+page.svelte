@@ -158,7 +158,7 @@
               class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-colors flex items-center gap-1.5"
               onclick={() => {
                 const text = [
-                  'KEYBOARD SHORTCUTS — Open3D Floorplan',
+                  'KEYBOARD SHORTCUTS — Griya Studio',
                   '',
                   '── TOOLS ──',
                   'V          Select tool',
