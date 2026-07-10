@@ -67,7 +67,7 @@
   let velocity = new THREE.Vector3();
   const direction = new THREE.Vector3();
   let moveSpeed = $state(800); // cm/s
-  let sprintSpeed = $state(1600); // cm/s
+  let sprintSpeed = $state(2400); // cm/s — 3x walk speed
   let eyeHeight = $state(160); // cm
 
   // Lighting controls state
@@ -1936,8 +1936,8 @@
       case 'KeyU': eyeHeight = Math.max(100, eyeHeight - 5); event.preventDefault(); break;
       case 'KeyO': moveSpeed = Math.min(2000, moveSpeed + 50); event.preventDefault(); break;
       case 'KeyK': moveSpeed = Math.max(200, moveSpeed - 50); event.preventDefault(); break;
-      case 'KeyP': sprintSpeed = Math.min(3000, sprintSpeed + 100); event.preventDefault(); break;
-      case 'KeyL': sprintSpeed = Math.max(500, sprintSpeed - 100); event.preventDefault(); break;
+      case 'KeyP': sprintSpeed = Math.min(4000, sprintSpeed + 100); event.preventDefault(); break;
+      case 'KeyL': sprintSpeed = Math.max(600, sprintSpeed - 100); event.preventDefault(); break;
       case 'Escape': exitWalkthroughMode(); break;
     }
   }
