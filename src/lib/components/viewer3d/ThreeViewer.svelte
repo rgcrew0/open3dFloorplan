@@ -2189,8 +2189,8 @@
     <button
       onclick={() => { showAllFloors = !showAllFloors; rebuildScene(); }}
       class="p-2 rounded-lg transition-colors {showAllFloors ? 'bg-purple-600 text-white ring-2 ring-purple-300' : 'bg-black/70 text-white hover:bg-black/80'}"
-      title={showAllFloors ? 'Active Floor Only' : 'Show All Floors Stacked'}
-      aria-label={showAllFloors ? 'Active Floor Only' : 'Show All Floors Stacked'}
+      title={showAllFloors ? 'Lantai Aktif Saja' : 'Tampilkan Semua Lantai'}
+      aria-label={showAllFloors ? 'Lantai Aktif Saja' : 'Tampilkan Semua Lantai'}
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="4" y="14" width="16" height="4" rx="1"/>
@@ -2203,8 +2203,8 @@
     <button
       onclick={viewTopDown}
       class="p-2 rounded-lg bg-black/70 text-white hover:bg-black/80 transition-colors"
-      title="Top-Down View"
-      aria-label="Top-Down View"
+      title="Tampilan Atas"
+      aria-label="Tampilan Atas"
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"/>
@@ -2219,8 +2219,8 @@
     <button
       onclick={toggleWallTransparency}
       class="p-2 rounded-lg transition-colors {wallsTransparent ? 'bg-blue-600 text-white ring-2 ring-blue-300' : 'bg-black/70 text-white hover:bg-black/80'}"
-      title={wallsTransparent ? 'Show Solid Walls' : 'Make Walls Transparent'}
-      aria-label={wallsTransparent ? 'Show Solid Walls' : 'Make Walls Transparent'}
+      title={wallsTransparent ? 'Tampilkan Dinding Solid' : 'Buat Dinding Transparan'}
+      aria-label={wallsTransparent ? 'Tampilkan Dinding Solid' : 'Buat Dinding Transparan'}
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="3" y="3" width="18" height="18" rx="2" opacity={wallsTransparent ? 0.3 : 1}/>
@@ -2233,8 +2233,8 @@
     <button
       onclick={() => { editMode = !editMode; if (editMode && walkthroughMode) { exitWalkthroughMode(); } if (!editMode) { selectedElementId.set(null); materialPickerWall = null; materialPickerPos = null; } }}
       class="p-2 rounded-lg transition-colors {editMode ? 'bg-blue-600 text-white ring-2 ring-blue-300' : 'bg-black/70 text-white hover:bg-black/80'}"
-      title={editMode ? 'Exit Edit Mode' : 'Edit Mode — click to select walls & change materials'}
-      aria-label={editMode ? 'Exit Edit Mode' : 'Edit Mode'}
+      title={editMode ? 'Keluar Mode Edit' : 'Mode Edit — klik dinding untuk memilih & ubah material'}
+      aria-label={editMode ? 'Keluar Mode Edit' : 'Mode Edit'}
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -2256,8 +2256,8 @@
         }
       }}
       class="p-2 rounded-lg transition-colors {cameraPlacementMode ? 'bg-blue-600 text-white ring-2 ring-blue-300' : 'bg-black/70 text-white hover:bg-black/80'}"
-      title={cameraPlacementMode ? 'Cancel camera placement (click floor to place)' : 'Place Interior Camera — click floor to position, click again to aim'}
-      aria-label="Place Interior Camera"
+      title={cameraPlacementMode ? 'Batal penempatan kamera (klik lantai untuk menempatkan)' : 'Tempatkan Kamera Interior — klik lantai untuk memposisikan, klik lagi untuk membidik'}
+      aria-label="Tempatkan Kamera Interior"
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M23 7l-7 5 7 5V7z"/>
@@ -2269,8 +2269,8 @@
     <button
       onclick={takeScreenshot}
       class="p-2 rounded-lg bg-black/70 text-white hover:bg-black/80 transition-colors"
-      title="Save 3D Screenshot"
-      aria-label="Save 3D Screenshot"
+      title="Simpan Tangkapan Layar 3D"
+      aria-label="Simpan Tangkapan Layar 3D"
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
@@ -2282,8 +2282,8 @@
     <button
       onclick={toggleWalkthroughMode}
       class="p-2 rounded-lg bg-black/70 text-white hover:bg-black/80 transition-colors"
-      title={walkthroughMode ? 'Exit Walkthrough Mode' : 'Enter Walkthrough Mode'}
-      aria-label={walkthroughMode ? 'Exit Walkthrough Mode' : 'Enter Walkthrough Mode'}
+      title={walkthroughMode ? 'Keluar Mode Jalan Kaki' : 'Masuk Mode Jalan Kaki'}
+      aria-label={walkthroughMode ? 'Keluar Mode Jalan Kaki' : 'Masuk Mode Jalan Kaki'}
   >
     {#if walkthroughMode}
       <!-- Exit/Eye closed icon -->
@@ -2306,11 +2306,11 @@
 
   {#if cameraPlacementMode && !cameraPlaced}
     <div class="absolute top-16 left-1/2 -translate-x-1/2 z-50 bg-black/80 text-white px-4 py-2 rounded-lg text-sm backdrop-blur-sm">
-      📷 Click on the floor to place camera position
+      📷 Klik lantai untuk menempatkan posisi kamera
     </div>
   {:else if cameraPlacementMode && cameraPlaced}
     <div class="absolute top-16 left-1/2 -translate-x-1/2 z-50 bg-black/80 text-white px-4 py-2 rounded-lg text-sm backdrop-blur-sm">
-      🎯 Click where the camera should look
+      🎯 Klik tempat kamera harus diarahkan
     </div>
   {/if}
 
@@ -2318,12 +2318,12 @@
   {#if cameraPreviewOpen && cameraPlaced}
     <div class="absolute bottom-4 right-4 z-50 bg-gray-900/95 rounded-xl shadow-2xl backdrop-blur-sm overflow-y-auto" style="width: 420px; max-height: calc(100vh - 8rem);">
       <div class="flex items-center justify-between px-3 py-2 border-b border-gray-700">
-        <span class="text-white text-sm font-medium">📷 Interior Camera</span>
+        <span class="text-white text-sm font-medium">📷 Kamera Interior</span>
         <div class="flex gap-2">
           <button class="text-xs text-blue-400 hover:text-blue-300" onclick={() => { aiRenderOpen = !aiRenderOpen; }}>
-            {aiRenderOpen ? 'Hide AI' : '✨ AI Render'}
+            {aiRenderOpen ? 'Sembunyikan AI' : '✨ Render AI'}
           </button>
-          <button class="text-gray-400 hover:text-white text-lg leading-none" onclick={() => { cameraPreviewOpen = false; if (cameraHelper) { wallGroup.remove(cameraHelper); cameraHelper = null; } cameraPlaced = false; aiRenderOpen = false; aiRenderResult = null; aiRenderError = null; }} aria-label="Close camera">✕</button>
+          <button class="text-gray-400 hover:text-white text-lg leading-none" onclick={() => { cameraPreviewOpen = false; if (cameraHelper) { wallGroup.remove(cameraHelper); cameraHelper = null; } cameraPlaced = false; aiRenderOpen = false; aiRenderResult = null; aiRenderError = null; }} aria-label="Tutup kamera">✕</button>
         </div>
       </div>
       <!-- Preview canvas with drag-to-rotate -->
@@ -2334,12 +2334,12 @@
         onpointerup={() => { previewDragStart = null; }}
       >
         <canvas bind:this={cameraPreviewCanvas} width="384" height="216" class="w-full pointer-events-none"></canvas>
-        <div class="absolute bottom-1 left-1 text-[10px] text-white/50 pointer-events-none">Drag to look around</div>
+        <div class="absolute bottom-1 left-1 text-[10px] text-white/50 pointer-events-none">Seret untuk melihat sekeliling</div>
       </div>
 
       <!-- Movement arrows -->
       <div class="flex items-center justify-center gap-1 py-1.5 border-b border-gray-800">
-        <span class="text-[10px] text-gray-500 mr-2">Move:</span>
+        <span class="text-[10px] text-gray-500 mr-2">Pindah:</span>
         <button class="w-7 h-7 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs flex items-center justify-center" onclick={() => moveCameraRelative(0, -10)} title="Move left">←</button>
         <div class="flex flex-col gap-0.5">
           <button class="w-7 h-7 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs flex items-center justify-center" onclick={() => moveCameraRelative(10, 0)} title="Move forward">↑</button>
@@ -2350,7 +2350,7 @@
 
       <div class="px-3 py-2 space-y-1.5">
         <label class="flex items-center justify-between text-xs text-gray-300">
-          <span>FOV</span>
+          <span>Sudut Pandang</span>
           <div class="flex items-center gap-2">
             <input type="range" min="50" max="120" bind:value={cameraFOV} class="w-28 h-1 accent-blue-400"
               oninput={() => { cameraPreviewDirty = true; }} />
@@ -2358,7 +2358,7 @@
           </div>
         </label>
         <label class="flex items-center justify-between text-xs text-gray-300">
-          <span>Height</span>
+          <span>Tinggi</span>
           <div class="flex items-center gap-2">
             <input type="range" min="80" max="220" bind:value={cameraHeight} class="w-28 h-1 accent-blue-400"
               oninput={() => { cameraPreviewDirty = true; }} />
@@ -2367,20 +2367,20 @@
         </label>
         <label class="flex items-center gap-2 text-xs text-gray-300 cursor-pointer select-none">
           <input type="checkbox" bind:checked={cameraXrayWalls} class="accent-blue-400" onchange={() => { cameraPreviewDirty = true; }} />
-          <span>X-ray walls (see through)</span>
+          <span>Tembus Dinding (lihat melalui)</span>
         </label>
         <div class="flex gap-2 pt-1">
           <button
             class="flex-1 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-500 transition-colors"
             onclick={captureInteriorPhoto}
           >
-            📸 Capture 1920×1080
+            📸 Tangkap 1920×1080
           </button>
           <button
             class="px-3 py-1.5 bg-gray-700 text-gray-300 text-sm rounded-lg hover:bg-gray-600 transition-colors"
             onclick={() => { cameraPlacementMode = true; cameraPlaced = false; }}
           >
-            Reposition
+            Tempatkan Ulang
           </button>
         </div>
       </div>
@@ -2388,7 +2388,7 @@
       <!-- AI Render Section -->
       {#if aiRenderOpen}
         <div class="border-t border-gray-700 px-3 py-3 space-y-2">
-          <div class="text-xs font-medium text-white">✨ AI Photorealistic Render</div>
+          <div class="text-xs font-medium text-white">✨ Render Fotorealistik AI</div>
 
           <!-- Provider toggle -->
           <div class="flex rounded-lg overflow-hidden border border-gray-700">
@@ -2417,19 +2417,19 @@
           
           <div class="grid grid-cols-3 gap-2">
             <label class="block">
-              <span class="text-[10px] text-gray-400 block mb-1">Style</span>
+              <span class="text-[10px] text-gray-400 block mb-1">Gaya</span>
               <select bind:value={aiRenderStyle} class="w-full bg-gray-800 text-gray-200 text-xs rounded px-1.5 py-1 border border-gray-700">
                 {#each STYLE_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
               </select>
             </label>
             <label class="block">
-              <span class="text-[10px] text-gray-400 block mb-1">Lighting</span>
+              <span class="text-[10px] text-gray-400 block mb-1">Pencahayaan</span>
               <select bind:value={aiRenderLighting} class="w-full bg-gray-800 text-gray-200 text-xs rounded px-1.5 py-1 border border-gray-700">
                 {#each LIGHTING_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
               </select>
             </label>
             <label class="block">
-              <span class="text-[10px] text-gray-400 block mb-1">Mood</span>
+              <span class="text-[10px] text-gray-400 block mb-1">Suasana</span>
               <select bind:value={aiRenderMood} class="w-full bg-gray-800 text-gray-200 text-xs rounded px-1.5 py-1 border border-gray-700">
                 {#each MOOD_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
               </select>
@@ -2437,13 +2437,13 @@
           </div>
 
           <label class="block">
-            <span class="text-[10px] text-gray-400 block mb-1">Extra instructions (optional)</span>
-            <input type="text" bind:value={aiRenderExtra} placeholder="e.g. hardwood floors, white marble counters..."
+            <span class="text-[10px] text-gray-400 block mb-1">Petunjuk tambahan (opsional)</span>
+            <input type="text" bind:value={aiRenderExtra} placeholder="misalnya papan lantai kayu, meja marmer putih..."
               class="w-full bg-gray-800 text-gray-200 text-xs rounded px-2 py-1.5 border border-gray-700 placeholder:text-gray-600" />
           </label>
 
           <details class="text-[10px] text-gray-500">
-            <summary class="cursor-pointer hover:text-gray-400">View full prompt</summary>
+            <summary class="cursor-pointer hover:text-gray-400">Lihat prompt lengkap</summary>
             <p class="mt-1 p-2 bg-gray-800 rounded text-gray-400 leading-relaxed">{buildAIPrompt()}</p>
           </details>
 
@@ -2453,26 +2453,26 @@
             disabled={aiRendering}
           >
             {#if aiRendering}
-              <span class="animate-spin">⏳</span> Rendering...
+              <span class="animate-spin">⏳</span> Merender...
             {:else}
-              ✨ Generate Photorealistic Render
+              ✨ Buat Render Fotorealistik
             {/if}
           </button>
 
           {#if aiRenderError}
             <div class="bg-red-900/30 border border-red-700 rounded-lg p-3 space-y-2">
-              <div class="text-xs font-medium text-red-400">❌ AI Render Failed</div>
+              <div class="text-xs font-medium text-red-400">❌ Render AI Gagal</div>
               <pre class="text-[10px] text-red-300 whitespace-pre-wrap break-all max-h-32 overflow-y-auto select-all cursor-text font-mono bg-red-950/40 rounded p-2">{aiRenderError}</pre>
               <button
                 class="text-[10px] text-red-400 hover:text-red-300 underline"
                 onclick={() => { navigator.clipboard.writeText(aiRenderError ?? ''); }}
-              >📋 Copy error</button>
+              >📋 Salin error</button>
             </div>
           {/if}
 
           {#if aiRenderResult}
             <div class="space-y-2">
-              <img src={aiRenderResult} alt="AI Render" class="w-full rounded-lg" />
+              <img src={aiRenderResult} alt="Render AI" class="w-full rounded-lg" />
               <button
                 class="w-full px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-500 transition-colors"
                 onclick={downloadAIRender}
@@ -2500,36 +2500,38 @@
     </div>
     
     <!-- Controls Panel -->
-    <div class="absolute top-4 left-4 z-10 bg-black/70 text-white text-xs rounded-lg backdrop-blur-sm p-3 space-y-2 min-w-[180px]">
-      <div class="font-semibold text-white/90 mb-1">Walkthrough Controls</div>
-      <label class="flex items-center justify-between gap-2">
-        <span class="text-white/70">Eye Height</span>
-        <div class="flex items-center gap-1">
-          <input type="range" min="80" max="220" bind:value={eyeHeight} class="w-16 h-1 accent-blue-400" />
-          <span class="w-10 text-right">{eyeHeight}cm</span>
-        </div>
-      </label>
-      <label class="flex items-center justify-between gap-2">
-        <span class="text-white/70">Walk Speed</span>
-        <div class="flex items-center gap-1">
-          <input type="range" min="100" max="1000" step="50" bind:value={moveSpeed} class="w-16 h-1 accent-blue-400" />
-          <span class="w-10 text-right">{moveSpeed}</span>
-        </div>
-      </label>
-      <label class="flex items-center justify-between gap-2">
-        <span class="text-white/70">Sprint Speed</span>
-        <div class="flex items-center gap-1">
-          <input type="range" min="200" max="2000" step="100" bind:value={sprintSpeed} class="w-16 h-1 accent-blue-400" />
-          <span class="w-10 text-right">{sprintSpeed}</span>
-        </div>
-      </label>
+    <div class="absolute top-4 left-4 z-10 bg-black/70 text-white text-xs rounded-lg backdrop-blur-sm p-3 space-y-3 min-w-[220px]">
+      <div class="font-semibold text-white/90 mb-2">Kontrol Jalan Kaki</div>
+      <div class="space-y-2 border-t border-white/20 pt-2">
+        <label class="flex items-center justify-between gap-2">
+          <span class="text-white/70 flex-1">Tinggi Mata</span>
+          <div class="flex items-center gap-1">
+            <span class="text-xs bg-blue-600/50 px-1.5 py-0.5 rounded">I/U</span>
+            <span class="w-12 text-right font-mono">{eyeHeight}cm</span>
+          </div>
+        </label>
+        <label class="flex items-center justify-between gap-2">
+          <span class="text-white/70 flex-1">Kecepatan Jalan</span>
+          <div class="flex items-center gap-1">
+            <span class="text-xs bg-blue-600/50 px-1.5 py-0.5 rounded">O/K</span>
+            <span class="w-12 text-right font-mono">{moveSpeed}</span>
+          </div>
+        </label>
+        <label class="flex items-center justify-between gap-2">
+          <span class="text-white/70 flex-1">Kecepatan Sprint</span>
+          <div class="flex items-center gap-1">
+            <span class="text-xs bg-blue-600/50 px-1.5 py-0.5 rounded">P/L</span>
+            <span class="w-12 text-right font-mono">{sprintSpeed}</span>
+          </div>
+        </label>
+      </div>
     </div>
 
     <!-- Help Text -->
     <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
       <div class="bg-black/70 text-white text-sm px-4 py-2 rounded-lg backdrop-blur-sm">
-        <div class="text-xs font-semibold">Movement: WASD • Look: Arrows • Sprint: Shift • Exit: ESC</div>
-        <div class="text-xs opacity-80 mt-1">Settings: I/U (eye) • O/K (speed) • P/L (sprint)</div>
+        <div class="text-xs font-semibold">Bergerak: WASD • Lihat: Panah • Sprint: Shift • Keluar: ESC</div>
+        <div class="text-xs opacity-80 mt-1">Pengaturan: I/U (mata) • O/K (kecepatan) • P/L (sprint)</div>
       </div>
     </div>
   {/if}
