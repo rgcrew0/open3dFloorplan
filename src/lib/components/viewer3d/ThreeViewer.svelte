@@ -1919,16 +1919,16 @@
     if (!walkthroughMode) return;
     
     switch (event.code) {
-      // Arrows = move
-      case 'ArrowUp': moveForward = true; break;
-      case 'ArrowDown': moveBackward = true; break;
-      case 'ArrowLeft': moveLeft = true; break;
-      case 'ArrowRight': moveRight = true; break;
-      // WASD = look
-      case 'KeyW': lookUp = true; break;
-      case 'KeyS': lookDown = true; break;
-      case 'KeyA': lookLeft = true; break;
-      case 'KeyD': lookRight = true; break;
+      // WASD = move forward/backward/left/right
+      case 'KeyW': moveForward = true; event.preventDefault(); break;
+      case 'KeyS': moveBackward = true; event.preventDefault(); break;
+      case 'KeyA': moveLeft = true; event.preventDefault(); break;
+      case 'KeyD': moveRight = true; event.preventDefault(); break;
+      // Arrows = look rotation
+      case 'ArrowUp': lookUp = true; event.preventDefault(); break;
+      case 'ArrowDown': lookDown = true; event.preventDefault(); break;
+      case 'ArrowLeft': lookLeft = true; event.preventDefault(); break;
+      case 'ArrowRight': lookRight = true; event.preventDefault(); break;
       case 'ShiftLeft':
       case 'ShiftRight': isShiftHeld = true; break;
       case 'Escape': exitWalkthroughMode(); break;
@@ -1939,14 +1939,14 @@
     if (!walkthroughMode) return;
     
     switch (event.code) {
-      case 'ArrowUp': moveForward = false; break;
-      case 'ArrowDown': moveBackward = false; break;
-      case 'ArrowLeft': moveLeft = false; break;
-      case 'ArrowRight': moveRight = false; break;
-      case 'KeyW': lookUp = false; break;
-      case 'KeyS': lookDown = false; break;
-      case 'KeyA': lookLeft = false; break;
-      case 'KeyD': lookRight = false; break;
+      case 'KeyW': moveForward = false; break;
+      case 'KeyS': moveBackward = false; break;
+      case 'KeyA': moveLeft = false; break;
+      case 'KeyD': moveRight = false; break;
+      case 'ArrowUp': lookUp = false; break;
+      case 'ArrowDown': lookDown = false; break;
+      case 'ArrowLeft': lookLeft = false; break;
+      case 'ArrowRight': lookRight = false; break;
       case 'ShiftLeft':
       case 'ShiftRight': isShiftHeld = false; break;
     }
@@ -2521,7 +2521,7 @@
     <!-- Help Text -->
     <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
       <div class="bg-black/70 text-white text-sm px-4 py-2 rounded-lg backdrop-blur-sm">
-        WASD to look • Arrows to move • Mouse to look • Shift to sprint • ESC to exit
+        WASD to move • Arrows to look • Shift to sprint • ESC to exit
       </div>
     </div>
   {/if}
