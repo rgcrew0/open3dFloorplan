@@ -1932,11 +1932,11 @@
       case 'ShiftLeft':
       case 'ShiftRight': isShiftHeld = true; break;
       // Settings adjustments (I/U = eye height, O/K = walk speed, P/L = sprint speed)
-      case 'KeyI': eyeHeight = Math.min(200, eyeHeight + 5); event.preventDefault(); break;
+      case 'KeyI': eyeHeight = Math.min(600, eyeHeight + 5); event.preventDefault(); break;
       case 'KeyU': eyeHeight = Math.max(100, eyeHeight - 5); event.preventDefault(); break;
-      case 'KeyO': moveSpeed = Math.min(2000, moveSpeed + 50); event.preventDefault(); break;
+      case 'KeyO': moveSpeed = Math.min(6000, moveSpeed + 50); event.preventDefault(); break;
       case 'KeyK': moveSpeed = Math.max(200, moveSpeed - 50); event.preventDefault(); break;
-      case 'KeyP': sprintSpeed = Math.min(4000, sprintSpeed + 100); event.preventDefault(); break;
+      case 'KeyP': sprintSpeed = Math.min(12000, sprintSpeed + 100); event.preventDefault(); break;
       case 'KeyL': sprintSpeed = Math.max(600, sprintSpeed - 100); event.preventDefault(); break;
       case 'Escape': exitWalkthroughMode(); break;
     }
